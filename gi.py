@@ -121,3 +121,49 @@ class ConditionalField:
         return hash(self.field) ^ hash(self.condition)
     def makeEvaluable(self, v):
         return Evaluable(lambda c: Evaluable.tryEv(c, v if self.condition.check(c) else self.field.zero), name="{} {}".format(v, self.condition))
+
+
+last = lambda a: list(a)[-1]
+
+atk = Field("ATK")
+atkB = Field("base ATK")
+atkF = Field("flat ATK")
+atkP = Field("% ATK")
+def_ = Field("DEF")
+defB = Field("base DEF")
+defF = Field("flat DEF")
+defP = Field("% DEF")
+hp = Field("HP")
+hpB = Field("base HP")
+hpF = Field("flat HP")
+hpP = Field("% HP")
+dmgBonus = Field("damage bonus")
+cr = Field("crit rate")
+cd = Field("crit damage")
+extraCv = Field("extra crit value")
+calcCv = Field("calculated crit value")
+calcCr = Field("calculated crit rate")
+calcCd = Field("calculated crit damage")
+enemyRes = Field("enemy res")
+enemyResMult = Field("enemy res multiplier")
+hit = Field("hit type", combinator=last)
+element = Field("element infusion", combinator=last)
+flatDmg = Field("flat damage")
+baseDmg = Field("base damage")
+minDamage = Field("non-crit damage")
+meanDamage = Field("crit-combined damage")
+maxDamage = Field("on-crit damage")
+
+calc = Profile({
+    atk: atkB * (1 + atkP) + atkF,
+    def_: defB * (1 + defP) + defF,
+    hp: hpB * (1 + hpP) + hpF,
+    enemyResMult[enemyRes >= 0]: 1 - enemyRes,
+    enemyResMult[enemyRes <= 0]: 1 - (enemyRes / 2),
+    calcCv: 2 * cr + cd + extraCv,
+    calcCr: (calcCv / 4) << 1 >> cr << (cr + extraCv / 2),
+    calcCd: calcCv - (calcCr * 2),
+    minDamage: (baseDmg + flatDmg) * (1 + dmgBonus) * enemyResMult,
+    maxDamage: minDamage * (1 + calcCd),
+    meanDamage: minDamage * (1 + (1 << calcCr) * calcCd),
+})
