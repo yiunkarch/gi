@@ -63,6 +63,9 @@ class Profile:
         if k not in self.data: return k.zero
         return list(map(lambda x: Evaluable.tryEv(self, x), self.data[k]))
     def __getitem__(self, k):
+        if isinstance(k, tuple):
+            p = Profile({s.start:s.stop for s in k[1:]})
+            return self.overlay(p)[k[0]]
         if k not in self.data: return k.zero
         return k.combinator(map(lambda x: Evaluable.tryEv(self, x), self.data[k]))
     def __add__(self, other):
@@ -90,6 +93,10 @@ class Field(Evaluable):
         return hash(self.name)
     # callable -> ConditionalField
     def __getitem__(self, key):
+        if isinstance(key, slice):
+            return Evaluable(lambda c: c[self, key])
+        if isinstance(key, tuple):
+            return Evaluable(lambda c: c[self, *key])
         if isinstance(key, Condition):
             return ConditionalField(self, key)
         raise Exception
