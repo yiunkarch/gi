@@ -114,9 +114,7 @@ class Condition:
     def __and__(self, other):
         return Condition(lambda c: self.check(c) and other.check(c), name="({}) and ({})".format(self.name, other.name))
     def __or__(self, other):
-        return ConditionalField(
-            self.field,
-            lambda c: self.check(c) and other.check(c))
+        return Condition(lambda c: self.check(c) or other.check(c), name="({}) or ({})".format(self.name, other.name))
 
 class ConditionalField:
     def __init__(self, field, condition):
