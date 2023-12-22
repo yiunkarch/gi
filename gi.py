@@ -130,7 +130,7 @@ class ConditionalField:
         return Evaluable(lambda c: Evaluable.tryEv(c, v) if self.condition.check(c) else Condition.UNMET, name="{} {}".format(v, self.condition))
 
 
-last = lambda a: list(a)[-1]
+last = lambda a: a[-1]
 
 atk = Field("ATK")
 atkB = Field("base ATK")
