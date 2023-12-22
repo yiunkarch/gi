@@ -59,15 +59,16 @@ class Profile:
                 raise Exception
             if k not in self.data: self.data[k] = []
             self.data[k].append(v)
-    def gi(self,k):
-        if k not in self.data: return k.zero
-        return list(map(lambda x: Evaluable.tryEv(self, x), self.data[k]))
     def __getitem__(self, k):
         if isinstance(k, tuple):
             p = Profile({s.start:s.stop for s in k[1:]})
             return self.overlay(p)[k[0]]
-        if k not in self.data: return k.zero
-        return k.combinator(map(lambda x: Evaluable.tryEv(self, x), self.data[k]))
+        data = self.data.get(k, [])
+        evaled = map(lambda x: Evaluable.tryEv(self, x), data)
+        filtered = filter(lambda x: x is not Condition.UNMET, evaled)
+        li = list(filtered)
+        if len(li) > 0: return k.combinator(li)
+        return Evaluable.tryEv(self, k.default)
     def __add__(self, other):
         p = Profile({})
         for k,v in itertools.chain(self.data.items(), other.data.items()):
@@ -82,16 +83,16 @@ class Profile:
         return p
     
 class Field(Evaluable):
-    def __init__(self, name, zero=0, combinator=sum):
+    def __init__(self, name, default=0, combinator=sum):
         super().__init__(lambda c: c[self])
         self.name = name
-        self.zero = zero
+        self.default = default
         self.combinator = combinator
     def __repr__(self):
         return "<{}>".format(self.name)
     def __hash__(self):
         return hash(self.name)
-    # callable -> ConditionalField
+    # Condition -> ConditionalField
     def __getitem__(self, key):
         if isinstance(key, slice):
             return Evaluable(lambda c: c[self, key])
@@ -102,6 +103,7 @@ class Field(Evaluable):
         raise Exception
 
 class Condition:
+    UNMET = object()
     def __init__(self, check, name=""):
         self.check = check
         self.name = name
@@ -125,7 +127,7 @@ class ConditionalField:
     def __hash__(self):
         return hash(self.field) ^ hash(self.condition)
     def makeEvaluable(self, v):
-        return Evaluable(lambda c: Evaluable.tryEv(c, v if self.condition.check(c) else self.field.zero), name="{} {}".format(v, self.condition))
+        return Evaluable(lambda c: Evaluable.tryEv(c, v) if self.condition.check(c) else Condition.UNMET, name="{} {}".format(v, self.condition))
 
 
 last = lambda a: list(a)[-1]
