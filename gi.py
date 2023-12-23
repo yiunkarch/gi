@@ -75,6 +75,11 @@ class Profile:
             if k not in p.data: p.data[k] = []
             p.data[k] += v
         return p
+    def __mul__(self, other):
+        p = Profile({})
+        for k,va in other.data.items():
+            p.data[k] = [Evaluable(lambda c: Evaluable.tryEv(self,v), name="{}@{}".format(v,other)) for v in va]
+        return p
     def overlay(self, other):
         p = Profile({})
         for k,v in itertools.chain(other.data.items(), self.data.items()):
