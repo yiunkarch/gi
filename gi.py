@@ -122,6 +122,14 @@ class Condition:
         return Condition(lambda c: self.check(c) and other.check(c), name="({}) and ({})".format(self.name, other.name))
     def __or__(self, other):
         return Condition(lambda c: self.check(c) or other.check(c), name="({}) or ({})".format(self.name, other.name))
+    def then(self, true=UNMET, false=UNMET):
+        st = "{}".format(true) if true is not Condition.UNMET else ""
+        sf = ": {}".format(false) if false is not Condition.UNMET else ""
+        return Evaluable(
+            lambda c: Evaluable.tryEv(c, true) if self.check(c) else false,
+            name="{} ? {}{}".format(self, st, sf)
+        )
+
 
 class ConditionalField:
     def __init__(self, field, condition):
@@ -132,7 +140,7 @@ class ConditionalField:
     def __hash__(self):
         return hash(self.field) ^ hash(self.condition)
     def makeEvaluable(self, v):
-        return Evaluable(lambda c: Evaluable.tryEv(c, v) if self.condition.check(c) else Condition.UNMET, name="{} {}".format(v, self.condition))
+        return self.condition.then(v)
 
 
 last = lambda a: a[-1]
