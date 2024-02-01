@@ -157,6 +157,7 @@ hp = Field("HP")
 hpB = Field("base HP")
 hpF = Field("flat HP")
 hpP = Field("% HP")
+em = Field("Elemental Mastery")
 dmgBonus = Field("damage bonus")
 cr = Field("crit rate")
 cd = Field("crit damage")
@@ -168,6 +169,10 @@ enemyRes = Field("enemy res")
 enemyResMult = Field("enemy res multiplier")
 hit = Field("hit type", combinator=last)
 element = Field("element infusion", combinator=last)
+reaction = Field("reaction name")
+reactionBonus = Field("reaction additive bonus")
+reactionAmplifier = Field("amplifying reaction multiplier")
+reactionMult = Field("amplifying reaction multiplier")
 flatDmg = Field("flat damage")
 baseDmg = Field("base damage")
 minDamage = Field("non-crit damage")
@@ -178,12 +183,14 @@ calc = Profile({
     atk: atkB * (1 + atkP) + atkF,
     def_: defB * (1 + defP) + defF,
     hp: hpB * (1 + hpP) + hpF,
+    reactionBonus[(reaction == "vape") | (reaction == "melt")]: 2.78 * em / (em + 1400),
+    reactionMult[(reaction == "vape") | (reaction == "melt")]: reactionAmplifier * (1 + reactionBonus),
     enemyResMult[enemyRes >= 0]: 1 - enemyRes,
     enemyResMult[enemyRes <= 0]: 1 - (enemyRes / 2),
     calcCv: 2 * cr + cd + extraCv,
     calcCr: (calcCv / 4) << 1 >> cr << (cr + extraCv / 2),
     calcCd: calcCv - (calcCr * 2),
-    minDamage: (baseDmg + flatDmg) * (1 + dmgBonus) * enemyResMult,
+    minDamage: (baseDmg + flatDmg) * (1 + dmgBonus) * (1 >> reactionMult) * enemyResMult,
     maxDamage: minDamage * (1 + calcCd),
     meanDamage: minDamage * (1 + (1 << calcCr) * calcCd),
 })
